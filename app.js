@@ -1,27 +1,16 @@
 let velocity = [0, 0, 0]; // Velocity in m/s
 let distance = [0, 0, 0]; // Distance in meters
 let lastTimestamp = null; // To store the last timestamp
+const dt = 0.1; // Time step for calculations (10 Hz)
 
 // Check if the DeviceMotionEvent is supported
 if (window.DeviceMotionEvent) {
     window.addEventListener('devicemotion', function(event) {
-        // Get the current timestamp
-        const currentTimestamp = event.timeStamp; // Time in milliseconds
-
-        // Calculate dt only if lastTimestamp is not null
-        let dt;
-        if (lastTimestamp !== null) {
-            dt = (currentTimestamp - lastTimestamp) / 1000; // Convert to seconds
-        }
-
-        // Update lastTimestamp
-        lastTimestamp = currentTimestamp;
-
         // Get the acceleration values (without gravity)
         var acceleration = event.acceleration;
 
         // Check if acceleration data is available
-        if (acceleration && dt !== undefined) {
+        if (acceleration) {
             // Display acceleration data
             document.getElementById('x').innerHTML = 'X: ' + acceleration.x.toFixed(2) + ' m/s²';
             document.getElementById('y').innerHTML = 'Y: ' + acceleration.y.toFixed(2) + ' m/s²';
