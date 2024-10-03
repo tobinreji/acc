@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <h1>Step Counter</h1>
+  <h1>Step Counters</h1>
   <div id="steps">Steps: 0</div>
   <div id="distance">Distance: 0.00 m</div>
 
@@ -43,7 +43,7 @@
       let rateOfChange = Math.abs(deltaX - deltaY);
 
       // If movement is above the threshold and the rate of change is low, count it as a step
-      return totalDelta > stepThreshold && rateOfChange < 0.3;
+      return totalDelta > stepThreshold && rateOfChange < 0.1;
     }
 
     // DeviceMotion event listener
