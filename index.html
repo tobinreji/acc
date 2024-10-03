@@ -43,7 +43,7 @@
       let rateOfChange = Math.abs(deltaX - deltaY);
 
       // If movement is above the threshold and the rate of change is low, count it as a step
-      return totalDelta > stepThreshold && rateOfChange < 0.1;
+      return totalDelta > stepThreshold && rateOfChange < 0;
     }
 
     // DeviceMotion event listener
