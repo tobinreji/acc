@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Counter with Turn Detection</title>
+  <title>Step Counter - Consistency in Acceleration</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
     #steps, #distance { font-size: 24px; margin-top: 20px; }
@@ -11,19 +11,17 @@
 </head>
 <body>
 
-  <h1>Step Counter with Gyroscope for Turn Detection</h1>
+  <h1>Step Counter (Avoid Counting Turns)</h1>
   <div id="steps">Steps: 0</div>
   <div id="distance">Distance: 0.00 m</div>
 
   <script>
     let stepCount = 0;
-    let previousAcceleration = { x: 0, y: 0 };  // Remove z-axis
-    let filteredAcceleration = { x: 0, y: 0 };  // Remove z-axis
+    let previousAcceleration = { x: 0, y: 0 };  // Only track x and y axes
+    let filteredAcceleration = { x: 0, y: 0 };
     let stepThreshold = 1.2;
     const averageStepLength = 0.78;  // meters, can be personalized
     const alpha = 0.8;  // Smoothing factor (low-pass filter strength)
-    let isTurning = false;  // Track whether the person is turning
-    const turnThreshold = 0.5;  // Gyroscope threshold for detecting turns
 
     // Apply the low-pass filter (ignoring z-axis)
     function applyLowPassFilter(currentAcceleration, previousAcceleration) {
@@ -33,7 +31,7 @@
       };
     }
 
-    // Function to detect significant movement (ignoring z-axis)
+    // Function to detect significant movement while avoiding steps during turns
     function detectStep(currentAcceleration, previousAcceleration) {
       let deltaX = Math.abs(currentAcceleration.x - previousAcceleration.x);
       let deltaY = Math.abs(currentAcceleration.y - previousAcceleration.y);
@@ -41,12 +39,15 @@
       // Sum of changes in x and y axes only
       let totalDelta = deltaX + deltaY;
       
-      // If movement is above the threshold and the person is not turning, count it as a step
-      return totalDelta > stepThreshold && !isTurning;
+      // Calculate the rate of change (erratic movement indicates a turn)
+      let rateOfChange = Math.abs(deltaX - deltaY);
+
+      // If movement is above the threshold and the rate of change is low, count it as a step
+      return totalDelta > stepThreshold && rateOfChange < 0.5;
     }
 
     // DeviceMotion event listener
-    if (window.DeviceMotionEvent && window.DeviceOrientationEvent) {
+    if (window.DeviceMotionEvent) {
       window.addEventListener('devicemotion', function(event) {
         let acceleration = event.accelerationIncludingGravity;
 
@@ -69,20 +70,8 @@
         // Update previous acceleration for the next frame
         previousAcceleration = filteredAcceleration;
       });
-
-      // Gyroscope event listener for detecting turns
-      window.addEventListener('deviceorientation', function(event) {
-        let rotationRate = event.alpha;  // Alpha indicates rotation around z-axis (turning)
-        
-        // If rotation rate is above the threshold, person is turning
-        if (Math.abs(rotationRate) > turnThreshold) {
-          isTurning = true;
-        } else {
-          isTurning = false;
-        }
-      });
     } else {
-      alert("DeviceMotion API or DeviceOrientation API not supported on this device.");
+      alert("DeviceMotion API not supported on this device.");
     }
   </script>
 </body>
