@@ -1,32 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accelerometer Data</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        #data {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step Counter with Turn Detection</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    #steps, #distance { font-size: 24px; margin-top: 20px; }
+  </style>
 </head>
 <body>
-    <div id="data">
-        <div id="x">X: 0.00 m/s²</div>
-        <div id="y">Y: 0.00 m/s²</div>
-        <div id="z">Z: 0.00 m/s²</div>
-    </div>
-    <div id="distance">Distance: X: 0.00 m, Y: 0.00 m, Z: 0.00 m</div>
-    <script src="app.js"></script>
+
+  <h1>Step Counter with Gyroscope for Turn Detection</h1>
+  <div id="steps">Steps: 0</div>
+  <div id="distance">Distance: 0.00 m</div>
+
+  <script>
+    let stepCount = 0;
+    let previousAcceleration = { x: 0, y: 0 };  // Remove z-axis
+    let filteredAcceleration = { x: 0, y: 0 };  // Remove z-axis
+    let stepThreshold = 1.2;
+    const averageStepLength = 0.78;  // meters, can be personalized
+    const alpha = 0.8;  // Smoothing factor (low-pass filter strength)
+    let isTurning = false;  // Track whether the person is turning
+    const turnThreshold = 0.5;  // Gyroscope threshold for detecting turns
+
+    // Apply the low-pass filter (ignoring z-axis)
+    function applyLowPassFilter(currentAcceleration, previousAcceleration) {
+      return {
+        x: alpha * previousAcceleration.x + (1 - alpha) * currentAcceleration.x,
+        y: alpha * previousAcceleration.y + (1 - alpha) * currentAcceleration.y
+      };
+    }
+
+    // Function to detect significant movement (ignoring z-axis)
+    function detectStep(currentAcceleration, previousAcceleration) {
+      let deltaX = Math.abs(currentAcceleration.x - previousAcceleration.x);
+      let deltaY = Math.abs(currentAcceleration.y - previousAcceleration.y);
+      
+      // Sum of changes in x and y axes only
+      let totalDelta = deltaX + deltaY;
+      
+      // If movement is above the threshold and the person is not turning, count it as a step
+      return totalDelta > stepThreshold && !isTurning;
+    }
+
+    // DeviceMotion event listener
+    if (window.DeviceMotionEvent && window.DeviceOrientationEvent) {
+      window.addEventListener('devicemotion', function(event) {
+        let acceleration = event.accelerationIncludingGravity;
+
+        // Apply the low-pass filter (ignoring z-axis)
+        filteredAcceleration = applyLowPassFilter({
+          x: acceleration.x,  // Only consider x
+          y: acceleration.y   // Only consider y
+        }, previousAcceleration);
+
+        // Check if a step is detected
+        if (detectStep(filteredAcceleration, previousAcceleration)) {
+          stepCount++;
+          document.getElementById('steps').textContent = `Steps: ${stepCount}`;
+          
+          // Calculate and display the distance traveled
+          let distance = stepCount * averageStepLength;
+          document.getElementById('distance').textContent = `Distance: ${distance.toFixed(2)} m`;
+        }
+
+        // Update previous acceleration for the next frame
+        previousAcceleration = filteredAcceleration;
+      });
+
+      // Gyroscope event listener for detecting turns
+      window.addEventListener('deviceorientation', function(event) {
+        let rotationRate = event.alpha;  // Alpha indicates rotation around z-axis (turning)
+        
+        // If rotation rate is above the threshold, person is turning
+        if (Math.abs(rotationRate) > turnThreshold) {
+          isTurning = true;
+        } else {
+          isTurning = false;
+        }
+      });
+    } else {
+      alert("DeviceMotion API or DeviceOrientation API not supported on this device.");
+    }
+  </script>
 </body>
 </html>
